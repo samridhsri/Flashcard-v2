@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/litera/bootstrap.min.css"
+        integrity="sha384-enpDwFISL6M3ZGZ50Tjo8m65q06uLVnyvkFO3rsoW0UC15ATBFz3QEhr3hmxpYsn" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+
+    <title>Document</title>
+</head>
+
+
+<style>
+    .flashcard-list {
+        margin: 0;
+        margin-left: 5em;
+    }
+
+    ul {
+        padding-left: 0;
+        display: flex;
+        flex-flow: row wrap;
+    }
+
+    li {
+        list-style-type: none;
+        padding: 10px 10px;
+        transition: all 0.3s ease;
+    }
+
+    .container {
+        max-width: 100%;
+        padding: 2em;
+    }
+
+    .card {
+        display: block;
+        width: 302px;
+        height: 203px;
+        padding: 80px 50px;
+        background-color: #51aae5;
+        border-radius: 7px;
+        margin: 5px;
+        text-align: center;
+        line-height: 27px;
+        cursor: pointer;
+        position: relative;
+        color: #fff;
+        font-weight: 600;
+        font-size: 20px;
+        box-shadow: 9px 10px 22px -8px rgba(209, 193, 209, .5);
+        will-change: transform;
+    }
+
+    li:hover {
+        transform: scale(1.1);
+    }
+
+    li .card {
+        background-color: #e65f51;
+    }
+
+    .delete-card {
+        position: absolute;
+        right: 0;
+        top: 0;
+        padding: 10px 15px;
+        opacity: .4;
+        /* transition: all 0.5s ease; */
+    }
+
+    .delete-card:hover,
+    .error {
+        opacity: 1;
+        transform: rotate(360deg);
+    }
+
+    .flip-enter-active {
+        transition: all 0.4s ease;
+    }
+
+    .flip-leave-active {
+        display: none;
+    }
+
+    .flip-enter,
+    .flip-leave {
+        transform: rotateY(180deg);
+        opacity: 0;
+
+    }
+
+    .error {
+        margin-top: 10px;
+        display: block;
+        color: #e44e42;
+        font-weight: 600;
+    }
+</style>
+
+<body>
+
+    <!-- <script type="module" src="../static/index.js"></script> -->
+    <div id="app">
+        {% raw %}
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarColor03">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">Cards
+                                <span class="visually-hidden">(current)</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" style="">
+                            <a class="nav-link" href="http://127.0.0.1:5000/logout">Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+
+        <div class="jumbotron verical-center">
+            <div class="container">
+                {% endraw %}
+                {% block content %}
+                <h1 class="title">
+                    Welcome, {{name}}!
+                </h1>
+                {% endblock %}
+
+            </div>
+        </div>
+        {% raw %}
+        <center>
+            <div>
+                <label for="updateCheckBox">Do you want to Update?</label>
+                <input type="checkbox" v-model="updateToggle" id="updateCheckBox"></input><br>
+                <label for="QuestionCheckBox">Test Yourself?</label>
+                <input type="checkbox" v-model="questionToggle" id="QuestionCheckBox"></input>
+            </div>
+        </center>
+        <div class="container">
+            <div style="margin-bottom: 0;">
+                <div style="row">
+                    <center>
+                        <label for="frontFlash" class="col-sm-2 col-form-label">Front</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control-plaintext" v-model="newFront" id="frontFlash"
+                                placeholder="Add front of your card here">
+                        </div>
+                    </center>
+                </div>
+
+                <div style="row">
+                    <center>
+                        <label for="frontFlash" class="col-sm-2 col-form-label">Back</label>
+                        <div class="col-sm-10">
+                            <input type="text" v-model="newBack" class="form-control-plaintext" id="backFlash"
+                                placeholder="Add back of your card here" v-on:keyup.enter="addCard">
+                        </div>
+                    </center>
+                </div>
+
+                <div>
+                    <center>
+                        <button class="btn btn-success" @click="addCard">Add Card</button>
+                    </center>
+                </div>
+                <hr>
+                <h3 v-if="questionToggle">Scores: {{ scores }}</h3>
+            </div>
+
+
+
+
+            <ul class="flashcard-list">
+                <li v-on:click="toggleCard(card)" v-for="(card, index) in cards" style="margin-bottom: 0em;">
+                    <transition name="flip">
+                        <p v-bind:key="card.flipped" class="card">
+                            {{ card.flipped ? card.back : card.front }}
+                            <span v-on:click="cards.splice(index, 1)" class="delete-card"
+                                @click="deleteCard(card)">X</span>
+                        </p>
+                    </transition>
+                    <p style="font-weight: bold; margin-left: 4em;" v-if="questionToggle" id="QuestionDidYou">Did you
+                        get it right?</p>
+                    <div class="container" style="margin-left: 4em; padding-top: 0;">
+
+                        <button class="btn btn-success" @click="scores++" v-if="questionToggle" id="Nobtn">Yes</button>
+                        <button class="btn btn-danger" @click="scores--" v-if="questionToggle" id="Nobtn">No</button>
+                    </div>
+                    <center><button v-if="updateToggle" data-bs-toggle="modal" data-bs-target="#updateModal"
+                            class="btn btn-info" id="updatebtn">update</button></center>
+                </li>
+            </ul>
+
+
+            <!-- Modal for Updation  -->
+
+            <div class="modal" id="updateModal">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Modal title</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Front</p>
+                            <input type="text" v-model="editCards.front" placeholder="Enter Front">
+                            {{editCards.front}}
+                            <p>Back</p>
+                            <input type="text" v-model="editCards.back" placeholder="Enter Back">
+                            {{editCards.back}}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" @click="submitUpdate" class="btn btn-primary">Save changes</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endraw %}
+
+    </div>
+    <script type="module">
+
+        Vue.component('flash-card', {
+            template: ``
+        })
+
+        const app = new Vue({
+            el: "#app",
+            data: {
+                message: "Hey",
+                newFront: "",
+                newBack: "",
+                questionToggle: "",
+                updateToggle: "",
+                scores: 0,
+                editCards: {
+                    id: "",
+                    front: "",
+                    back: "",
+                    flipped: false
+                },
+                cards: [
+                ]
+            },
+            methods: {
+                getCards: function () {
+                    const path = `http://localhost:5000/getcards`
+                    fetch(path).then(response => response.json()).then(data => console.log(data));
+                },
+                initForm: function () {
+                    this.newFront = "";
+                    this.newBack = "";
+                },
+                toggleCard: function (card) {
+                    card.flipped = !card.flipped;
+                },
+                addCard: function () {
+                    console.log("addCard Function")
+                    if (this.newFront == "" || this.newBack == "") {
+                        return 0
+                    }
+                    let payload = {
+                        front: this.newFront,
+                        back: this.newBack,
+                        flipped: false
+                    }
+                    this.cards.push(payload)
+                    const path = `http://localhost:5000/cards`
+                    axios.post(path, payload).then(() => {
+                        this.getCards();
+                    }).catch((err) => {
+                        console.error(err)
+                    })
+                    this.initForm()
+                },
+                removeCard: function (cardId) {
+                    const path = `http://localhost:5000/cards/${cardId}`;
+                    axios.delete(path).then(() => {
+                        this.getCards();
+                    }).catch((err) => {
+                        console.error(err);
+                        this.getCards()
+                    })
+                },
+                deleteCard(card) {
+                    this.removeCard(card.id)
+                }
+                ,
+                submitUpdate: function () {
+                    const payload = {
+                        front: this.editCards.front,
+                        back: this.editCards.back,
+                        flipped: false
+                    }
+                    this.updateCard(payload, this.editCards.id)
+                },
+                updateCard(payload, cardId) {
+                    const path = `http://localhost:5000/cards/${cardId}`;
+                    axios.put(path, payload).then(() => {
+                        this.getCards();
+                    }).catch((err) => {
+                        console.error(err);
+                        this.getCards()
+                    })
+
+                },
+                editCard(card) {
+                    this.editCards = card
+                }
+            },
+            mounted() {
+                const path = `http://localhost:5000/getcards`
+                axios.get(path).then((res) => {
+                    console.log(res.data)
+                    this.cards = res.data.cards
+                }).catch((err) => {
+                    console.error(err)
+                })
+            },
+            created: function () {
+
+
+            },
+            updated() {
+
+            },
+
+        })
+
+    </script>
+
+</body>
+
+
+</html>
